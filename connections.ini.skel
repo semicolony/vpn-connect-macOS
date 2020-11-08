@@ -1,0 +1,13 @@
+[datacenter1]
+client=openconnect
+uri=datacenter.some.uri.com
+username=philipp.kemmeter
+password=PLAINTEXT-PW
+
+[datacenter2]
+client=openconnect
+uri=datacenter2.some.uri.com
+authgroup=RAVPN_2FA
+username=philipp.kemmeter
+password=PLAINTEXT-PW
+2fa-append=yes
