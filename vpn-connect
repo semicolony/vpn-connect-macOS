@@ -30,7 +30,6 @@ function check_if_root_user_or_exit {
 }
 
 function check_destination_or_exit_with_help_screen {
-    [[ $# -lt 1 ]] && help::show && exit 1
     local -r destination=$1
     local found=false
 
@@ -51,5 +50,7 @@ function main {
     config::extract_section destination_config CONFIG $destination
     tunnel::open destination_config
 }
+
+[[ $# -lt 1 ]] && help::show && exit 1
 
 main $@
