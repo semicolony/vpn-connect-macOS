@@ -25,23 +25,44 @@ function ini::parse_file {
     local -n ini_parse_file_result_sections=$1
     local -n ini_parse_file_result_all=$2
     local -r ini_file=$3
-    local section= key= var= val= i=0
+    local section= key= val= line=
 
-    while IFS='= ' read var val
+    while IFS= read -r line
     do
-        if [[ $var == \[*] ]]; then
-            section=${var:1:-1}
+        if [[ ${line:0:1} == "#" ]]; then
+            continue; # comment
+        elif [[ $line == \[*] ]]; then
+            section=$(echo ${line:1:-1} | tr -d "[:blank:]")
             ini_parse_file_result_sections[$i]=$section
             ((i++))
-        elif [[ $var ]]; then
-            if [[ -z $section ]]; then
-                key="$var";
-            else
-                key="$section,$var";
+        else
+            key=$(echo $line | cut -d = -f 1 | tr -d "[:blank:]")
+            if [[ -z $key ]]; then
+                continue; # empty line
+            fi
+            val=$(echo $line | sed 's/^[^=]*=//' | tr -d "[:blank:]")
+            if [[ ! -z $section ]]; then
+                key="$section,$key";
             fi
             ini_parse_file_result_all[$key]=$val
         fi
     done < $ini_file
+}
+
+##
+# Creates and echos the file contents from an associative array as returned
+# from ini::parse_file.
+##
+function ini::create_file {
+    local -n ini_create_file_assoc=$1
+    local section= key=
+
+    for key in "${!ini_create_file_assoc[@]}"; do
+        [[ "${key/,*/}" != "$section" ]] && \
+            section=${key/,*/} && \
+            echo "[$section]"
+        echo ${key/*,/}=${ini_create_file_assoc[$key]}
+    done
 }
 
 fi

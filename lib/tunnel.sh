@@ -21,8 +21,15 @@ function tunnel::openconnect {
     local -n tunnel_openconnect_config=$1
     local additional_args=
 
-    [[ ${tunnel_openconnect_config[authgroup]+exists} ]] && [[ ${tunnel_openconnect_config[authgroup]} ]] && \
-        additional_args="$additional_args --authgroup ${tunnel_openconnect_config[authgroup]}"
+    for key in "${!tunnel_openconnect_config[@]}"; do
+        case $key in
+            2fa-append|password|client|username|uri)
+                continue
+                ;;
+            *)
+                additional_args="$additional_args --$key \"${tunnel_openconnect_config[$key]}\""
+        esac
+    done
 
     if [[ ${tunnel_open_config[password]+exists} ]] && [[ ${tunnel_open_config[password]} ]]; then
         echo ${tunnel_openconnect_config[password]} | \
