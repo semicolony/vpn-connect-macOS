@@ -25,7 +25,7 @@ function ini::parse_file {
     local -n ini_parse_file_result_sections=$1
     local -n ini_parse_file_result_all=$2
     local -r ini_file=$3
-    local section= key= val= line=
+    local section= key= val= line= i=0
 
     while IFS= read -r line
     do

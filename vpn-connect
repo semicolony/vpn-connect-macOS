@@ -21,12 +21,39 @@ declare -a CONFIGSECTIONS=
 config::load CONFIGSECTIONS CONFIG $CONFFILE || exit 1
 declare -r CONFIGSECTIONS CONFIG
 
+declare -A AVAILABLE_OPTIONS=([b]="background")
+
 
 function check_if_root_user_or_exit {
     if [[ $EUID -ne 0 ]]; then
        echo::error "This script must be run as root."
        exit 1
     fi
+}
+
+function group_arguments {
+    local -n group_arguments_result=$1
+    shift 
+    while [[ $# -gt 0 ]]; do
+        #if [[ ${1:0:1} == - ]]; then
+        #    if [[ $# -gt 1 && ${2:0:1} != - ]]; then
+        #        group_arguments_result[$1]=$2
+        #        shift
+        #    else
+        #        group_arguments_result[$1]=true
+        #    fi
+        #else
+            group_arguments_result[$1]=true
+        #fi
+        shift
+    done
+}
+
+function extract_destination {
+    local -n extract_destination_arg_groups=$1
+    for key in "${!extract_destination_arg_groups[@]}"; do
+        [[ ${key:0:1} != - ]] && echo $key && break
+    done
 }
 
 function check_destination_or_exit_with_help_screen {
@@ -40,17 +67,43 @@ function check_destination_or_exit_with_help_screen {
     $found || (help::show "Wrong value for DESTINATION: '$1'" && exit 1)
 }
 
+function extract_options_or_exit_with_help_screen {
+    local -n extract_options_result=$1
+    local -n extract_options_arg_groups=$2
+    for key in "${!extract_options_arg_groups[@]}"; do
+        if [[ ${key:0:1} == - && ${key:1:1} != - ]]; then
+            if [[ ${AVAILABLE_OPTIONS[${key:1}]+exists} ]]; then
+                extract_options_result[${AVAILABLE_OPTIONS[${key:1}]}]=${extract_options_arg_groups[$key]}
+            else
+                (help::show "Invalid option '$key'" && exit 1)
+            fi
+        elif [[ ${key:0:2} == -- ]]; then
+            for k in "${!AVAILABLE_OPTIONS[@]}"; do
+                [[ "${AVAILABLE_OPTIONS[$k]}" == "${key:2}" ]] && found=true && break
+            done
+            if $found; then
+                extract_options_result[${key:2}]=${extract_options_arg_groups[$key]}
+            else
+                (help::show "Invalid option '$key'" && exit 1)
+            fi
+        fi
+    done
+}
+
 function main {
-    local -r destination=$1
     local -A destination_config
+    local -A arg_groups
+    local -A options
 
     check_if_root_user_or_exit
-    check_destination_or_exit_with_help_screen $destination
+    group_arguments arg_groups  "$@"
 
-    config::extract_section destination_config CONFIG $destination
-    tunnel::open destination_config
+    config::extract_section destination_config CONFIG $(extract_destination arg_groups)
+    extract_options_or_exit_with_help_screen options arg_groups
+
+    tunnel::open destination_config options
 }
 
 [[ $# -lt 1 ]] && help::show && exit 1
 
-main $@
+main "$@"

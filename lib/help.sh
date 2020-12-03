@@ -16,8 +16,10 @@ function help::show {
     local -r W=${COLOR[W]}
     [[ $# -gt 0 ]] && echo::error "$@" && echo
 
-    echo -e "${W}Usage:$w $BASENAME DESTINATION"
+    echo -e "${W}Usage:$w $BASENAME [OPTIONS] DESTINATION"
     echo
+    echo -e "Where ${W}OPTIONS$w may be one of:"
+    echo -e "${W}--background -b$w  runs the application in background"
 
     if [[ ${#CONFIGSECTIONS[@]} -eq 0 ]]; then
         echo::error "No destinations configured."
