@@ -6,19 +6,19 @@ set -u # exit on undeclared variablesk
 set -o pipefail
 
 declare -r WORKDIR="$(pwd -L)"
-declare -r BASENAME=$(basename $0)
+declare -r BASENAME="$(basename "$0")"
 declare -r CONFFILE="$WORKDIR/connections.ini"
 declare -r LIBDIR="$WORKDIR/lib"
 
-pushd $LIBDIR > /dev/null
+pushd "$LIBDIR" > /dev/null || exit 1
 source ./help.sh
 source ./config.sh
 source ./tunnel.sh
-popd > /dev/null
+popd > /dev/null || exit 1
 
 declare -A CONFIG=
 declare -a CONFIGSECTIONS=
-config::load CONFIGSECTIONS CONFIG $CONFFILE || exit 1
+config::load CONFIGSECTIONS CONFIG "$CONFFILE" || exit 1
 declare -r CONFIGSECTIONS CONFIG
 
 declare -A AVAILABLE_OPTIONS=([b]="background")
@@ -56,17 +56,6 @@ function extract_destination {
     done
 }
 
-function check_destination_or_exit_with_help_screen {
-    local -r destination=$1
-    local found=false
-
-    for (( i=0; i<${#CONFIGSECTIONS[@]}; i++)); do
-        [[ "${CONFIGSECTIONS[$i]}" == "$destination" ]] && found=true && break
-    done
-
-    $found || (help::show "Wrong value for DESTINATION: '$1'" && exit 1)
-}
-
 function extract_options_or_exit_with_help_screen {
     local -n extract_options_result=$1
     local -n extract_options_arg_groups=$2
@@ -94,14 +83,24 @@ function main {
     local -A destination_config
     local -A arg_groups
     local -A options
+    local destination
 
     check_if_root_user_or_exit
-    group_arguments arg_groups  "$@"
+    group_arguments arg_groups "$@"
+    destination="$(extract_destination arg_groups)"
 
-    config::extract_section destination_config CONFIG $(extract_destination arg_groups)
+    ini::extract_section destination_config CONFIG "$destination"  || {
+         help::show "Wrong value for DESTINATION '$destination'."
+         exit 1
+    }
     extract_options_or_exit_with_help_screen options arg_groups
 
-    tunnel::open destination_config options
+    declare -p destination_config
+
+    tunnel::open destination_config options || {
+        echo::error "Cannot open tunnel."
+        exit 1
+    }
 }
 
 [[ $# -lt 1 ]] && help::show && exit 1

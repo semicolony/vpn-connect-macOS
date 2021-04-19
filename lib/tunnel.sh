@@ -27,6 +27,8 @@ function tunnel::open {
         esac
     done
 
+    [[ ${tunnel_open_config[client]+exists} ]] || return 1
+
     tunnel::${tunnel_open_config[client]} tunnel_open_config tunnel_open_options "$additional_args"
 }
 

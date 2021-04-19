@@ -13,20 +13,9 @@ function config::load {
     local -n config_load_result_all=$2
     local -r conf_file=$3
 
-    config::check_file_security $conf_file || return 1
-    ini::parse_file config_load_result_sections config_load_result_all $conf_file
+    config::check_file_security "$conf_file" || return 1
+    ini::parse_file config_load_result_sections config_load_result_all "$conf_file"
     config::validate config_load_result_all
-
-}
-
-function config::extract_section {
-    local -n config_extract_sections_result=$1 config=$2
-    local section=$3 key
-
-    for key in ${!config[@]}; do
-        [[ "${key/,*/}" == "$section" ]] && \
-            config_extract_sections_result[${key/*,/}]=${config[$key]}
-    done
 
 }
 

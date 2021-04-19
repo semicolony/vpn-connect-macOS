@@ -25,28 +25,49 @@ function ini::parse_file {
     local -n ini_parse_file_result_sections=$1
     local -n ini_parse_file_result_all=$2
     local -r ini_file=$3
-    local section= key= val= line= i=0
+    local section='' key='' val='' line='' i=0
 
     while IFS= read -r line
     do
         if [[ ${line:0:1} == "#" ]]; then
             continue; # comment
-        elif [[ $line == \[*] ]]; then
-            section=$(echo ${line:1:-1} | tr -d "[:blank:]")
+        elif [[ $line == '['*']' ]]; then
+            section=$(echo "${line:1:-1}" | tr -d "[:blank:]")
             ini_parse_file_result_sections[$i]=$section
             ((i++))
         else
-            key=$(echo $line | cut -d = -f 1 | tr -d "[:blank:]")
+            key=$(echo "$line" | cut -d = -f 1 | tr -d "[:blank:]")
             if [[ -z $key ]]; then
                 continue; # empty line
             fi
-            val=$(echo $line | sed 's/^[^=]*=//' | tr -d "[:blank:]")
+            val=$(echo "$line" | sed 's/^[^=]*=//' | tr -d "[:blank:]")
             if [[ ! -z $section ]]; then
                 key="$section,$key";
             fi
             ini_parse_file_result_all[$key]=$val
         fi
-    done < $ini_file
+    done < "$ini_file"
+}
+
+##
+# Extracts a section from the given config array.
+#
+# $1 Reference paramter. Contains the result as associativ array.
+# $2 Pass the associative config array here as you've received it from
+#    ini::parse_file, i.e. [$section,$key]=$value
+# $3 The section to extract.
+##
+function ini::extract_section {
+    local -n ini_extract_sections_result=$1 config=$2
+    local section=$3 key
+
+    found=false
+    for key in "${!config[@]}"; do
+        [[ "${key/,*/}" == "$section" ]] && \
+            ini_extract_sections_result[${key/*,/}]=${config[$key]} && \
+            found=true
+    done
+    $found || return 1
 }
 
 ##
@@ -55,13 +76,13 @@ function ini::parse_file {
 ##
 function ini::create_file {
     local -n ini_create_file_assoc=$1
-    local section= key=
+    local section='' key=''
 
     for key in "${!ini_create_file_assoc[@]}"; do
         [[ "${key/,*/}" != "$section" ]] && \
             section=${key/,*/} && \
             echo "[$section]"
-        echo ${key/*,/}=${ini_create_file_assoc[$key]}
+        echo "${key/*,/}=${ini_create_file_assoc[$key]}"
     done
 }
 
