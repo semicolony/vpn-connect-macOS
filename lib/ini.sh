@@ -5,18 +5,23 @@ if [[ ! -v __INCLUDE_INI_SH__ ]]; then __INCLUDE_INI_SH__=true
 # Functions to parse and write ini files.                                     #
 ###############################################################################
 
+source ./string.sh
+
 ##
 # Parses an ini file and fills an numeric array with the found section names
 # and an associative array with the complete config, where key is
 # "$section,$var".
 #
 # Example:
+#
+# key=but no section
+#
 # [cool]
 # i=like
 # love=100
 #
 # Would fill the first passed array with ([0]="cool") and the second passed
-# array with ([cool,i]="like" [cool,love]=100).
+# array with ([key]="but no section" [cool,i]="like" [cool,love]=100).
 #
 # The third parameter is expected to contain the filename of the ini file to
 # parse.
@@ -29,24 +34,55 @@ function ini::parse_file {
 
     while IFS= read -r line
     do
-        if [[ ${line:0:1} == "#" ]]; then
-            continue; # comment
-        elif [[ $line == '['*']' ]]; then
-            section=$(echo "${line:1:-1}" | tr -d "[:blank:]")
+        if ini::_parser_is_comment "$line"; then
+            continue;
+        fi
+
+        line="$(string::trim "$line")"
+
+        if ini::_parse_is_empty "$line"; then
+            continue;
+        fi
+
+        if ini::_parser_is_section "$line"; then
+            section="$(string::trim "${line:1:-1}")"
             ini_parse_file_result_sections[$i]=$section
             ((i++))
-        else
-            key=$(echo "$line" | cut -d = -f 1 | tr -d "[:blank:]")
-            if [[ -z $key ]]; then
-                continue; # empty line
-            fi
-            val=$(echo "$line" | sed 's/^[^=]*=//' | tr -d "[:blank:]")
-            if [[ ! -z $section ]]; then
-                key="$section,$key";
-            fi
-            ini_parse_file_result_all[$key]=$val
+            continue;
         fi
+
+        if ini::_parser_is_key_value_pair "$line"; then
+            key=$(echo "$line" | cut -d = -f 1)
+            val=$(echo "$line" | sed 's/^[^=]*=//')
+        else
+            key=$(echo "$line")
+            val=
+        fi
+
+        key="$(string::trim "$key")"
+        val="$(string::trim "$val")"
+
+        if [[ -n $section ]]; then
+            key="$section,$key";
+        fi
+        ini_parse_file_result_all[$key]=$val
     done < "$ini_file"
+}
+
+function ini::_parser_is_comment {
+    [[ ${1:0:1} == "#" ]]
+}
+
+function ini::_parser_is_section {
+    [[ "$1" == '['*']' ]]
+}
+
+function ini::_parser_is_key_value_pair {
+    [[ $1 == *'='* ]]
+}
+
+function ini::_parse_is_empty {
+    [[ -z $1 ]]
 }
 
 ##
@@ -59,12 +95,12 @@ function ini::parse_file {
 ##
 function ini::extract_section {
     local -n ini_extract_sections_result=$1 config=$2
-    local section=$3 key
+    local section=$3 key_section_pair
 
     found=false
-    for key in "${!config[@]}"; do
-        [[ "${key/,*/}" == "$section" ]] && \
-            ini_extract_sections_result[${key/*,/}]=${config[$key]} && \
+    for key_section_pair in "${!config[@]}"; do
+        [[ "${key_section_pair/,*/}" == "$section" ]] && \
+            ini_extract_sections_result[${key_section_pair/*,/}]=${config[$key_section_pair]} && \
             found=true
     done
     $found || return 1

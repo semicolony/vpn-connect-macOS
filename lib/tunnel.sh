@@ -6,15 +6,17 @@ if [[ ! -v __INCLUDE_TUNNEL_SH__ ]]; then __INCLUDE_TUNNEL_SH__=true
 ###############################################################################
 
 source ./echo.sh
+source ./assoc.sh
 
 function tunnel::open {
     local -n tunnel_open_config=$1
     local -n tunnel_open_options=$2
     local additional_args=
 
-    [[ ${tunnel_open_config[2fa-append]+exists} ]] && [[ ${tunnel_open_config[2fa-append]} == yes ]] && \
-    [[ ${tunnel_open_config[password]+exists} ]] && [[ ${tunnel_open_config[password]} ]] && \
-        tunnel_open_config[password]="${tunnel_open_config[password]}$(tunnel::read_token)"
+    [[ "$(assoc::get "tunnel_open_config" "2fa-append")" == "yes" ]] && \
+        [[ -n "$(assoc::get "tunnel_open_config" "password")" ]] && \
+
+        tunnel_open_config[password]="${tunnel_open_config[password]}$(tunnel::_read_token)"
 
 
     for key in "${!tunnel_open_config[@]}"; do
@@ -23,61 +25,61 @@ function tunnel::open {
                 continue
                 ;;
             *)
-                additional_args="$additional_args --$key ${tunnel_open_config[$key]}"
+                additional_args="$additional_args --$key $(assoc::get "tunnel_open_config" "$key")"
         esac
     done
 
-    [[ ${tunnel_open_config[client]+exists} ]] || return 1
+    [[ -n "$(assoc::get "tunnel_open_config" "client")" ]] || return 1
 
-    tunnel::${tunnel_open_config[client]} tunnel_open_config tunnel_open_options "$additional_args"
+    tunnel::_${tunnel_open_config[client]} \
+        "$(assoc::get "tunnel_open_config" "username")" \
+        "$(assoc::get "tunnel_open_config" "password")" \
+        "$(assoc::get "tunnel_open_config" "uri")" \
+        "$(assoc::get "tunnel_open_options" "background")" \
+        "$additional_args"
 }
 
-function tunnel::openconnect {
-    local -n tunnel_openconnect_config=$1
-    local -n tunnel_openconnect_options=$2
-    local additional_args="$3"
+function tunnel::_openconnect {
+    local username="$1"
+    local password="$2"
+    local uri="$3"
+    local background="$4"
+    local additional_args="$5"
 
     local cmd="openconnect "
-    [[ ${tunnel_openconnect_options[background]+exists} && ${tunnel_openconnect_options[background]} ]] && \
+    [[ -n "$background" ]] && \
         cmd="$cmd -b"
 
-    cmd="$cmd -u ${tunnel_openconnect_config[username]}"
+    cmd="$cmd -u $username"
 
-    [[ ${tunnel_open_config[password]+exists} && ${tunnel_open_config[password]} ]] && \
-        cmd="echo ${tunnel_openconnect_config[password]} | $cmd --passwd-on-stdin"
+    [[ -n "$password" ]] && \
+        cmd="echo $password | $cmd --passwd-on-stdin"
 
-    cmd="$cmd $additional_args ${tunnel_openconnect_config[uri]}"
+    cmd="$cmd $additional_args $uri"
     eval $cmd
 }
 
-function tunnel::openvpn {
-    local -n tunnel_openvpn_config=$1
-    local -n tunnel_openconnect_options=$2
-    local additional_args="$3" password= username= file=
+function tunnel::_openvpn {
+    local username="$1"
+    local password="$2"
+    local uri="$3"
+    local background="$4"
+    local additional_args="$5"
 
-    [[ ${tunnel_openvpn_config[password]+exists} ]] && [[ ${tunnel_openvpn_config[password]} ]] && \
-        password="${tunnel_openvpn_config[password]}"
+    [[ -n "$uri" ]] && \
+        additional_args="$additional_args --remote $uri"
 
-    [[ ${tunnel_openvpn_config[username]+exists} ]] && [[ ${tunnel_openvpn_config[username]} ]] && \
-        username="${tunnel_openvpn_config[username]}"
-
-    [[ ${tunnel_openvpn_config[uri]+exists} ]] && [[ ${tunnel_openvpn_config[uri]} ]] && \
-        additional_args="$additional_args --remote ${tunnel_openvpn_config[uri]}"
-
-    [[ ${tunnel_openconnect_options[background]+exists} ]] && [[ ${tunnel_openconnect_options[background]} ]] && \
+    [[ -n "$background" ]] && \
         additional_args="$additional_args --daemon"
-
 
     if [[ -n $username || -n $password ]]; then
         openvpn $additional_args --auth-user-pass <(echo -e "$username\n$password")
     else
         openvpn $additional_args
     fi
-
-
 }
 
-function tunnel::read_token {
+function tunnel::_read_token {
     echo::question "Token: " "Interactive terminal needed."
     read token
     echo $token
