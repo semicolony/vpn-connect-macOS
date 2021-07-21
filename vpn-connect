@@ -5,7 +5,7 @@
 set -u # exit on undeclared variablesk
 set -o pipefail
 
-declare -r WORKDIR="$(pwd -L)"
+declare -r WORKDIR="$(dirname "$(readlink -f "$0")")"
 declare -r BASENAME="$(basename "$0")"
 declare -r CONFFILE="$WORKDIR/connections.ini"
 declare -r LIBDIR="$WORKDIR/lib"
@@ -16,8 +16,8 @@ source ./config.sh
 source ./tunnel.sh
 popd > /dev/null || exit 1
 
-declare -A CONFIG=
-declare -a CONFIGSECTIONS=
+declare -A CONFIG
+declare -a CONFIGSECTIONS
 config::load CONFIGSECTIONS CONFIG "$CONFFILE" || exit 1
 declare -r CONFIGSECTIONS CONFIG
 
@@ -33,7 +33,7 @@ function check_if_root_user_or_exit {
 
 function group_arguments {
     local -n group_arguments_result=$1
-    shift 
+    shift
     while [[ $# -gt 0 ]]; do
         #if [[ ${1:0:1} == - ]]; then
         #    if [[ $# -gt 1 && ${2:0:1} != - ]]; then
@@ -94,8 +94,6 @@ function main {
          exit 1
     }
     extract_options_or_exit_with_help_screen options arg_groups
-
-    declare -p destination_config
 
     tunnel::open destination_config options || {
         echo::error "Cannot open tunnel."
