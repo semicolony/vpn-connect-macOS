@@ -13,10 +13,9 @@ Copy the connection.ini.skel to connection.ini, change mod to 600 and edit its c
     password=SECRET_PASSWORD_IN_PLAINTEXT # This is why the mod has to be 600. Optional.
     2fa-append=yes                 # Whether you need the 2fa token to be appended to the password.
     # list of other CL arguments valid for the chosen client
-    
+
 Then run `vpn-connect datacenter1` and the magic begins.
 
 ## Supported Clients
 
-For now, openconnect is supported, only. More to come.
-
+For now, openconnect and openvpn is supported.
