@@ -1,0 +1,72 @@
+#!/usr/local/bin/bash
+
+function connect_to_dc(){
+    #keepalive seems to be ignored -> vpn-connect script needs to be understood
+    #sudo ./vpn-connect -b "$1" --keepalive=30,3
+    sudo ./vpn-connect -b "$1"
+}
+
+function test_connectivity_for(){
+    case "$1" in
+        dc01|dc02) openconnect_process="remote.$1";;
+        *) openconnect_process="remote.dc0";;
+    esac
+    vpn_status=$(pgrep -f $openconnect_process &>/dev/null; echo $?)
+    return "$vpn_status"
+}
+
+function vpn_connection_status(){
+    for dc in dc01 dc02; do
+        echo "checking $dc"
+        if test_connectivity_for "$dc"; then
+            echo "$dc is connected"
+        else
+            echo "$dc is not connected"
+        fi
+    done
+    exit 0
+}
+
+function stop_vpn_connections(){
+    sudo pkill SIGINT openconnect
+    exit 0
+}
+function usage(){
+    echo "RTFM..."
+    exit 0
+}
+
+onepassword_account= #put your onepassword account name here
+
+#turn off vpn
+case "$1" in
+    disconnect|dc|off|kill|stop) stop_vpn_connections;;
+    status|st) vpn_connection_status;;
+    '') usage;;
+esac
+
+#main loop
+
+eval $(op signin --account $onepassword_account)
+
+for dc in "$@"; do
+    if test_connectivity_for "$dc"; then
+        echo "$dc already running"
+        shift
+        continue
+    fi
+done
+
+for dc in "$@"; do
+    case "$dc" in
+        dc01) targets="datacenter1";;
+        dc02) targets="datacenter2";;
+        on)   targets="datacenter1 datacenter2";;
+    esac
+    for target in $targets; do
+        connect_to_dc "$target"
+        sleep 2
+    done
+done
+
+exit 0

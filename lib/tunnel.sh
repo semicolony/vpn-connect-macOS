@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 
 if [[ ! -v __INCLUDE_TUNNEL_SH__ ]]; then __INCLUDE_TUNNEL_SH__=true
 ###############################################################################
@@ -12,20 +12,26 @@ function tunnel::open {
     local -n tunnel_open_config=$1
     local -n tunnel_open_options=$2
     local additional_args=
+    local config_2fa="$(assoc::get "tunnel_open_config" "2fa-append")"
+    local config_password="$(assoc::get "tunnel_open_config" "password")"
+    local config_onepassword="$(assoc::get "tunnel_open_config" "onepassword")"
+    local config_username="$(assoc::get "tunnel_open_config" "username")"
 
-    [[ "$(assoc::get "tunnel_open_config" "2fa-append")" == "yes" ]] && \
-        [[ -n "$(assoc::get "tunnel_open_config" "password")" ]] && \
-
+    [[ "$config_2fa" == "yes" && -n "$config_password" ]] && \
         tunnel_open_config[password]="${tunnel_open_config[password]}$(tunnel::_read_token)"
 
+    [[ "$config_2fa" == "yes" && -n "$config_onepassword" ]] && \
+        password=$(su $config_username -c "/usr/local/bin/op item get --fields label=password $config_onepassword")
+        tunnel_open_config[password]="${password}$(tunnel::_read_token)"
 
     for key in "${!tunnel_open_config[@]}"; do
         case $key in
-            2fa-append|password|client|username|uri)
+            2fa-append|password|client|username|uri|onepassword)
                 continue
                 ;;
             *)
                 additional_args="$additional_args --$key $(assoc::get "tunnel_open_config" "$key")"
+                ;;
         esac
     done
 
@@ -45,8 +51,9 @@ function tunnel::_openconnect {
     local uri="$3"
     local background="$4"
     local additional_args="$5"
+    local mypath="$(dirname "$0")"
 
-    local cmd="openconnect "
+    local cmd="openconnect -s $mypath/lib/no_dns_update.sh"
     [[ -n "$background" ]] && \
         cmd="$cmd -b"
 

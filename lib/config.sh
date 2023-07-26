@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 
 if [[ ! -v __INCLUDE_CONFIG_SH__ ]]; then __INCLUDE_CONFIG_SH__=true
 ###############################################################################
@@ -21,8 +21,13 @@ function config::load {
 
 function config::check_file_security {
     local -r filename=$1
+<<<<<<< HEAD
     [[ "$(stat -c %A "$1")" != "-rw-------" ]] && \
         echo::error "$1 must have file mode -rw-------." && \
+=======
+    [[ "$(stat -f %OLp "$1")" != "600" ]] && \
+        echo::error "$1 must have file mode 0600 -rw-------." && \
+>>>>>>> bc04b7e (Init commit for the macOS - onepassword spoon)
         return 1
     return 0
 }

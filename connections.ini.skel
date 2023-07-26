@@ -2,7 +2,8 @@
 client=openconnect
 uri=datacenter.some.uri.com
 username=philipp.kemmeter
-password=PLAINTEXT-PW
+onepassword='password-id'
+password= #leave empty in combination with onepassword
 
 [datacenter2]
 client=openconnect
