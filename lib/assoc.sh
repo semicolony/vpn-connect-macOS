@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 
 if [[ ! -v __INCLUDE_ASSOC_SH__ ]]; then __INCLUDE_ASSOC_SH__=true
 ###############################################################################
