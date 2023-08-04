@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/loca/bin/bash
 
 if [[ ! -v __INCLUDE_COLOR_SH__ ]]; then __INCLUDE_COLOR_SH__=true
 

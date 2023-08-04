@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/loca/bin/bash
 
 cd test
 for file in $(ls *.sh); do

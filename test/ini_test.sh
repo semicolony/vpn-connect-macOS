@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/loca/bin/bash
 
 # This will be overridden in oneTimeSetUp().
 MOCK_INI_FILE=''

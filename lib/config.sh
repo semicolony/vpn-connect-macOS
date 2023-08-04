@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/loca/bin/bash
 
 if [[ ! -v __INCLUDE_CONFIG_SH__ ]]; then __INCLUDE_CONFIG_SH__=true
 ###############################################################################

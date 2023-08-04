@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/loca/bin/bash
 
 function testAssocGet() {
     declare -A ASSOC=([a]="value A" [c]="")
