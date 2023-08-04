@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 
 if [[ ! -v __INCLUDE_ECHO_SH__ ]]; then __INCLUDE_ECHO_SH__=true
 
