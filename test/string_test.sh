@@ -1,4 +1,4 @@
-#!/usr/loca/bin/bash
+#!/usr/local/bin/bash
 
 function testTrim() {
     assertEquals \

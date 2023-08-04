@@ -1,4 +1,4 @@
-#!/usr/loca/bin/bash
+#!/usr/local/bin/bash
 
 if [[ ! -v __INCLUDE_HELP_SH__ ]]; then __INCLUDE_HELP_SH__=true
 

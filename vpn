@@ -1,4 +1,4 @@
-#!/usr/loca/bin/bash
+#!/usr/local/bin/bash
 
 function connect_to_dc(){
     #keepalive seems to be ignored -> vpn-connect script needs to be understood
