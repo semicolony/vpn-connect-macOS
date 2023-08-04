@@ -19,3 +19,12 @@ Then run `vpn-connect datacenter1` and the magic begins.
 ## Supported Clients
 
 For now, openconnect and openvpn is supported.
+
+## Todos
+
+* Get the vpn wrapper implemented into the vpn-connect script
+* decouple the onepassword functions into a lib file
+* decouple the actions into a lib file
+
+Bonuspoints
+* macOS usable "make" file that installs all requirements
